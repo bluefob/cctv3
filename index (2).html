@@ -1,0 +1,1582 @@
+<!-- Version 51.0 -->
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCTV Footage Capture System</title>
+    
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0056b3">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- PURE jsPDF LIBRARY -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f7f6;
+            --border-color: #ccc;
+            --calc-bg: #e8f4f8;
+            --text-color: #333;
+            --container-bg: #fff;
+            --fieldset-bg: #fafafa;
+            --input-bg: #fff;
+            --input-text: #333;
+            --table-even: #f2f2f2;
+        }
+
+        body.dark-mode {
+            --primary-color: #4da3ff;
+            --bg-color: #121212;
+            --border-color: #444;
+            --calc-bg: #1e2a30;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --fieldset-bg: #2d2d2d;
+            --input-bg: #333;
+            --input-text: #f4f4f4;
+            --table-even: #2d2d2d;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto 10px auto;
+        }
+
+        .dark-mode-toggle {
+            background: none;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .dark-mode-toggle:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--container-bg);
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1.1em;
+            cursor: pointer;
+            color: #888;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        fieldset {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: var(--fieldset-bg);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        legend {
+            font-weight: bold;
+            color: var(--primary-color);
+            background: var(--container-bg);
+            padding: 0 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            width: 48%; 
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        .form-group.full-width { width: 100%; }
+
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: var(--text-color);
+            display: block; 
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="datetime-local"],
+        input[type="tel"],
+        input[type="number"],
+        textarea,
+        select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1em;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--input-bg);
+            color: var(--input-text);
+        }
+
+        input[readonly] { background-color: var(--border-color); cursor: not-allowed; font-weight: bold; opacity: 0.7; }
+
+        body:not(.dark-mode) .ref-highlight { background-color: #fff3cd !important; color: #856404 !important; border: 1px solid #ffeeba !important; text-align: center; }
+        body.dark-mode .ref-highlight { background-color: #4a401c !important; color: #ffd966 !important; border: 1px solid #856404 !important; text-align: center; }
+
+        @keyframes priorityFlash {
+            0% { background-color: rgba(220, 53, 69, 0.1); border-color: #dc3545; color: #dc3545; }
+            50% { background-color: rgba(220, 53, 69, 0.3); border-color: #ff0000; color: #ff0000; box-shadow: 0 0 8px rgba(220, 53, 69, 0.4); }
+            100% { background-color: rgba(220, 53, 69, 0.1); border-color: #dc3545; color: #dc3545; }
+        }
+        .priority-flash {
+            animation: priorityFlash 1.2s infinite !important;
+            font-weight: bold !important;
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .auto-calc-section { background-color: var(--calc-bg); border: 1px dashed var(--primary-color); padding: 15px; border-radius: 5px; margin-top: 15px; }
+
+        .radio-group { display: flex; gap: 15px; align-items: center; padding: 10px 0; }
+        .radio-group label { font-weight: normal; margin: 0; display: inline; }
+
+        button { cursor: pointer; border-radius: 5px; font-size: 1em; transition: background-color 0.3s; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        button.submit-btn { flex: 2; padding: 15px; background-color: var(--primary-color); color: #fff; border: none; font-size: 1.1em; }
+        button.submit-btn:hover { background-color: #004494; }
+        button.clear-btn { flex: 1; padding: 15px; background-color: #dc3545; color: #fff; border: none; font-size: 1.1em; }
+        button.clear-btn:hover { background-color: #c82333; }
+
+        .action-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
+        button.view-btn { background-color: #28a745; color: white; border: none; padding: 8px 12px; }
+        button.mg11-btn { background-color: #6f42c1; color: white; border: none; padding: 8px 12px; }
+        button.print-btn { background-color: #ffc107; color: #212529; border: none; padding: 8px 12px; }
+        button.amend-btn { background-color: #fd7e14; color: white; border: none; padding: 8px 12px; }
+        button.export-btn { background-color: #17a2b8; color: white; border: none; padding: 10px 20px; font-size: 1em; }
+
+        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table, th, td { border: 1px solid var(--border-color); }
+        th, td { padding: 12px; text-align: left; }
+        th { background-color: var(--primary-color); color: white; }
+        tr:nth-child(even) { background-color: var(--table-even); }
+        .empty-log { text-align: center; padding: 20px; color: #777; font-style: italic; }
+
+        .search-bar { width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid var(--primary-color); border-radius: 5px; box-sizing: border-box; margin-bottom: 20px; background-color: var(--input-bg); color: var(--input-text); }
+        .guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .guide-card { border: 1px solid var(--border-color); border-radius: 5px; padding: 15px; background: var(--fieldset-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between;}
+        .guide-card h4 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 1.2em; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        .guide-card p { margin: 5px 0; font-size: 0.9em; }
+        
+        .btn-group { display: flex; gap: 8px; margin-top: 15px; }
+        .manual-btn { flex: 1; padding: 8px; text-align: center; background: var(--calc-bg); border: 1px solid var(--primary-color); border-radius: 4px; font-weight: bold; text-decoration: none; color: var(--primary-color); transition: 0.3s; font-size: 0.85em; }
+        .manual-btn:hover { background: var(--primary-color); color: #fff; }
+        
+        .yt-btn { flex: 1; padding: 8px; text-align: center; background: #fff; border: 1px solid #ff0000; border-radius: 4px; font-weight: bold; text-decoration: none; color: #ff0000; transition: 0.3s; font-size: 0.85em; cursor: pointer; }
+        .yt-btn:hover { background: #ff0000; color: #fff; }
+        body.dark-mode .yt-btn { background: #2d2d2d; }
+        body.dark-mode .yt-btn:hover { background: #ff0000; }
+
+        .map-btn { flex: 1; padding: 8px; text-align: center; background: #fff; border: 1px solid #28a745; border-radius: 4px; font-weight: bold; text-decoration: none; color: #28a745; transition: 0.3s; font-size: 0.85em; cursor: pointer; max-width: 90px;}
+        .map-btn:hover { background: #28a745; color: #fff; }
+        body.dark-mode .map-btn { background: #2d2d2d; }
+        body.dark-mode .map-btn:hover { background: #28a745; color: #fff; }
+
+        .input-group-btn { display: flex; gap: 8px; }
+
+        .draft-status { text-align: center; font-size: 0.85em; color: #28a745; margin-top: 10px; font-style: italic; height: 20px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: var(--container-bg); margin: 3% auto; padding: 30px; border: 1px solid #888; width: 95%; max-width: 900px; border-radius: 8px; position: relative; }
+        .close-btn { color: #aaa; position: absolute; top: 15px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; z-index: 10; }
+
+        #photo_gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .photo-wrapper { position: relative; width: 100px; height: 100px; }
+        .photo-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; border: 1px solid var(--border-color); }
+        .photo-wrapper button { position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; padding: 0; display: flex; align-items: center; justify-content: center; }
+
+        @media (max-width: 600px) {
+            .form-group { width: 100%; } 
+            .container, .modal-content { padding: 15px; }
+            .log-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .button-group { flex-direction: column; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; background-color: var(--container-bg); }
+            tr:nth-child(even) { background-color: var(--container-bg); }
+            td { border: none; border-bottom: 1px solid var(--border-color); position: relative; padding-left: 35%; text-align: right; min-height: 24px; }
+            td::before { position: absolute; top: 12px; left: 10px; width: 30%; padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold; color: var(--primary-color); }
+            td:nth-of-type(1)::before { content: "Ref / Date"; }
+            td:nth-of-type(2)::before { content: "Operation"; }
+            td:nth-of-type(3)::before { content: "Venue"; }
+            td:nth-of-type(4)::before { content: "Action"; }
+            td:last-child { border-bottom: none; }
+            .action-buttons { justify-content: flex-end; }
+            .tabs { flex-direction: row; flex-wrap: wrap; border-bottom: none; }
+            .tab-btn { flex: 0 0 50%; box-sizing: border-box; border-left: none; border-bottom: 3px solid transparent; text-align: center; padding: 12px 5px; font-size: 0.95em; }
+            .tab-btn.active { border-left-color: transparent; border-bottom-color: var(--primary-color); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar no-print">
+    <div style="font-weight: bold; color: var(--primary-color);"></div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <span style="font-weight: bold; color: var(--primary-color); font-size: 1.1em;">v51.0</span>
+        <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 Toggle Dark Mode</button>
+    </div>
+</div>
+
+<div class="container" id="mainContainer">
+    <h2 class="no-print">CCTV Retrieval System</h2>
+
+    <div class="tabs no-print">
+        <button class="tab-btn active" onclick="switchTab('form-tab')">Capture Form</button>
+        <button class="tab-btn" onclick="switchTab('log-tab')">Submission Log</button>
+        <button class="tab-btn" onclick="switchTab('guides-tab')">System Guides</button>
+    </div>
+
+    <div id="form-tab" class="tab-content active">
+        <form id="cctvForm">
+            <div class="no-print" style="margin-bottom: 20px;">
+                <button type="button" class="clear-btn" onclick="clearForm()" style="width: 100%; display: block;">Clear Form & Keep Top Info</button>
+            </div>
+
+            <fieldset>
+                <legend>General Information</legend>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="ref_number">Unique Reference Number</label>
+                        <input type="text" id="ref_number" name="Reference Number" value="Generated upon submission" class="ref-highlight" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="operation">Operation</label>
+                        <input type="text" id="operation" name="Operation" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="Date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="person_attending">Person Attending</label>
+                        <input type="text" id="person_attending" name="Person Attending">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_number">Contact Number</label>
+                        <input type="tel" id="contact_number" name="Contact Number">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Venue & Contact Details</legend>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="venue_address">Venue Name / Address & Postcode</label>
+                        <textarea id="venue_address" name="Venue Address" rows="2" required placeholder="Enter building name, street, etc."></textarea>
+                        <div class="input-group-btn" style="margin-top: 5px;">
+                            <input type="text" id="postcode" name="Postcode" style="flex: 1; text-transform: uppercase;" placeholder="Postcode (e.g. B1 1AA)">
+                            <button type="button" class="map-btn no-print" onclick="openMaps()" title="Open Specific Address in Maps">📍 Map</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="venue_contact_name">Contact Name</label>
+                        <input type="text" id="venue_contact_name" name="Venue Contact Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth <span id="age_display" style="color:var(--primary-color); font-weight:normal;"></span></label>
+                        <input type="date" id="dob" name="Contact DOB" onchange="calculateAge()">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="venue_telephone">Telephone Number</label>
+                        <input type="tel" id="venue_telephone" name="Venue Telephone">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="venue_notes">Venue Notes</label>
+                        <textarea id="venue_notes" name="Venue Notes" rows="2" placeholder="e.g., Directions to DVR, owner's working hours, system condition..."></textarea>
+                    </div>
+                    
+                    <div class="form-group full-width no-print">
+                        <label style="color: var(--primary-color); font-size: 1.1em;">Is CCTV Available at this location?</label>
+                        <div class="radio-group" style="background-color: var(--container-bg); padding: 10px; border: 1px solid var(--border-color); border-radius: 5px;">
+                            <input type="radio" id="cctv_avail_yes" name="CCTV Available" value="Yes" checked onchange="toggleCctvDetails()">
+                            <label for="cctv_avail_yes" style="font-weight: bold; margin-right: 20px;">Yes</label>
+                            
+                            <input type="radio" id="cctv_avail_no" name="CCTV Available" value="No" onchange="toggleCctvDetails()">
+                            <label for="cctv_avail_no" style="font-weight: bold; color: #dc3545;">No (Negative Enquiry)</label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div id="cctv-details-section">
+                <fieldset>
+                    <legend>System Details</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="make_model">CCTV System Make/Model</label>
+                            <div class="input-group-btn">
+                                <input type="text" id="make_model" name="System Make and Model" list="cctv_brands" autocomplete="off" style="flex: 1;">
+                                <button type="button" class="yt-btn no-print" onclick="searchInlineYT()" style="width: auto; padding: 0 15px; margin: 0;" title="Search YouTube for instructions">▶️ Search YT</button>
+                            </div>
+                            <datalist id="cctv_brands">
+                                <option value="Abus"></option><option value="ACTi"></option><option value="Adata"></option><option value="ADT"></option><option value="Aimetis"></option><option value="Alibi"></option><option value="Altronix"></option><option value="Amcrest"></option><option value="American Dynamics"></option><option value="Annke"></option><option value="Arecont Vision"></option><option value="Arlo"></option><option value="Aventura"></option><option value="AvertX"></option><option value="Avigilon"></option><option value="Axis"></option><option value="Baxall"></option><option value="Blink"></option><option value="Bolide"></option><option value="Bosch"></option><option value="Brickcom"></option><option value="Cathexis"></option><option value="CCTV Security Pros"></option><option value="Cisco"></option><option value="Clinton Electronics"></option><option value="Concept Pro"></option><option value="Costar"></option><option value="Costco"></option><option value="CP Plus"></option><option value="Dahua"></option><option value="Dedicated Micros"></option><option value="Defender"></option><option value="Digital Watchdog"></option><option value="Eufy"></option><option value="Exacq"></option><option value="Exvision"></option><option value="FLIR"></option><option value="Foscam"></option><option value="Genetec"></option><option value="GeoVision"></option><option value="Geutebruck"></option><option value="Google Nest"></option><option value="Grandstream"></option><option value="GW Security"></option><option value="Hanwha Vision"></option><option value="Hikvision"></option><option value="Honeywell"></option><option value="IC Realtime"></option><option value="Ikegami"></option><option value="IndigoVision"></option><option value="Infinova"></option><option value="InVid"></option><option value="Kasa"></option><option value="Lorex"></option><option value="LTS"></option><option value="Luma Surveillance"></option><option value="Luxriot"></option><option value="Mace"></option><option value="March Networks"></option><option value="Merit Lilin"></option><option value="Milestone Systems"></option><option value="Mobotix"></option><option value="Montavue"></option><option value="Night Owl"></option><option value="Northern"></option><option value="OnSSI"></option><option value="OpenEye"></option><option value="Optiview"></option><option value="Panasonic"></option><option value="Pelco"></option><option value="Q-See"></option><option value="QNAP"></option><option value="Qognify"></option><option value="Reolink"></option><option value="Ring"></option><option value="Salient"></option><option value="Sannce"></option><option value="SimpliSafe"></option><option value="Sony"></option><option value="Speco Technologies"></option><option value="Swann"></option><option value="Synology"></option><option value="Tapo"></option><option value="Tiandy"></option><option value="TP-Link"></option><option value="TVT"></option><option value="Ubiquiti"></option><option value="Uniview"></option><option value="Verint"></option><option value="Vicon"></option><option value="Vista"></option><option value="Vitek"></option><option value="Vivotek"></option><option value="Wansview"></option><option value="Wavestore"></option><option value="W Box"></option><option value="Wyze"></option><option value="Yi"></option><option value="Zmodo"></option><option value="Zosi"></option>
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="total_cameras">Total Number of Cameras</label>
+                            <input type="number" id="total_cameras" name="Total Cameras">
+                        </div>
+                        <div class="form-group">
+                            <label for="credentials">System Username / Passwords</label>
+                            <input type="text" id="credentials" name="System Credentials">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="earliest_footage">Earliest Footage Available</label>
+                            <input type="datetime-local" id="earliest_footage" name="Earliest Footage" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="overwrite_data">When will system overwrite data?</label>
+                            <input type="text" id="overwrite_data" name="Overwrite Timeline" readonly placeholder="Auto-calculated">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Time Sync & Footage Adjustments</legend>
+                    <div class="form-row no-print">
+                        <div class="form-group">
+                            <label for="system_time">DVR System Date & Time</label>
+                            <input type="datetime-local" id="system_time" name="DVR Time" class="time-calc" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="real_time">Real Date & Time</label>
+                            <input type="datetime-local" id="real_time" name="Real Time Sync" class="time-calc" step="1">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="time_difference">Time Difference</label>
+                            <input type="text" id="time_difference" name="Calculated Time Difference" readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-row no-print">
+                        <div class="form-group">
+                            <label for="incident_start">Real Time of Incident (Start)</label>
+                            <input type="datetime-local" id="incident_start" name="Incident Start (Real Time)" class="time-calc" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="incident_end">Real Time of Incident (End)</label>
+                            <input type="datetime-local" id="incident_end" name="Incident End (Real Time)" class="time-calc" step="1">
+                        </div>
+                    </div>
+
+                    <div class="auto-calc-section">
+                        <h4 style="margin-top:0; color:var(--primary-color);">Adjusted DVR Download Times</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="dl_start">DVR Search Start Time</label>
+                                <input type="datetime-local" id="dl_start" name="DVR Download Start Time" readonly step="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="dl_end">DVR Search End Time</label>
+                                <input type="datetime-local" id="dl_end" name="DVR Download End Time" readonly step="1">
+                            </div>
+                        </div>
+                        <div id="incident_duration" style="text-align:center; font-weight:bold; color:var(--primary-color); margin-top:5px;"></div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Download Specifics</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dl_footage_start">Downloaded Footage (Start Date & Time)</label>
+                            <input type="datetime-local" id="dl_footage_start" name="Downloaded Footage Start" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="dl_footage_end">Downloaded Footage (End Date & Time)</label>
+                            <input type="datetime-local" id="dl_footage_end" name="Downloaded Footage End" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="cameras_downloaded">Cameras Downloaded</label>
+                            <input type="text" id="cameras_downloaded" name="Cameras Downloaded" placeholder="e.g., Cam 1, Front Door">
+                        </div>
+                        <div class="form-group">
+                            <label for="format_footage">Format of Footage</label>
+                            <input type="text" id="format_footage" name="Footage Format" placeholder="e.g., .mp4, .avi, proprietary">
+                        </div>
+                        <div class="form-group">
+                            <label for="download_method">Download Method</label>
+                            <input type="text" id="download_method" name="Download Method" placeholder="e.g., USB, Disc, Network, AirDrop">
+                        </div>
+                        <div class="form-group">
+                            <label for="memory_stick_no">Memory Stick No. / Disc Ref</label>
+                            <input type="text" id="memory_stick_no" name="Media Reference">
+                        </div>
+                        <div class="form-group">
+                            <label>Player Downloaded?</label>
+                            <div class="radio-group" style="padding-top: 5px;">
+                                <input type="radio" id="player_yes" name="Player Downloaded" value="Yes">
+                                <label for="player_yes">Yes</label>
+                                <input type="radio" id="player_no" name="Player Downloaded" value="No" checked>
+                                <label for="player_no">No</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Audio Recorded?</label>
+                            <div class="radio-group" style="padding-top: 5px;">
+                                <input type="radio" id="audio_yes" name="Audio Recorded" value="Yes">
+                                <label for="audio_yes">Yes</label>
+                                <input type="radio" id="audio_no" name="Audio Recorded" value="No" checked>
+                                <label for="audio_no">No</label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <fieldset>
+                <legend>Additional Exhibits & Photos</legend>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="notes">Additional CCTV Notes</label>
+                        <textarea id="notes" name="Notes"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="exhibit_number">Exhibit Number</label>
+                        <input type="text" id="exhibit_number" name="Exhibit Number">
+                    </div>
+                    <div class="form-group full-width" id="photo_section">
+                        <label>DVR System Photos</label>
+                        <div class="no-print" style="margin-bottom: 10px;">
+                            <input type="file" id="dvr_photo" accept="image/*" multiple onchange="handlePhotoUpload(event)">
+                            <p style="font-size: 0.8em; color: #666; margin-top: 5px;">You can select multiple photos. They will be compressed automatically.</p>
+                        </div>
+                        <input type="hidden" id="dvr_photos_base64" name="DVR Photos">
+                        <div id="photo_gallery" class="no-print"></div> 
+                    </div>
+                </div>
+            </fieldset>
+
+            <div id="draftStatus" class="draft-status no-print"></div>
+
+            <div class="button-group no-print">
+                <button type="button" class="submit-btn" id="pdfSubmitBtn" onclick="submitAndDownloadPDF()">Submit & Download PDF</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- TAB 2: LOG -->
+    <div id="log-tab" class="tab-content no-print">
+        <div class="log-header">
+            <h3 style="color: var(--primary-color); margin: 0;">Historical Submissions</h3>
+            <button class="export-btn" onclick="exportLogToCSV()">Export Log to CSV</button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ref Number (Date)</th>
+                        <th>Operation</th>
+                        <th>Venue</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+            <div id="emptyLogMessage" class="empty-log">No forms submitted yet.</div>
+        </div>
+    </div>
+
+    <!-- TAB 3: SYSTEM GUIDES -->
+    <div id="guides-tab" class="tab-content no-print">
+        <h3 style="color: var(--primary-color); margin-top: 0;">Default System Logins & App Guides</h3>
+        <p style="font-size: 0.9em; margin-bottom: 15px;">Search common CCTV manufacturers for default engineer passwords, or look up export instructions for cloud-based apps.</p>
+        
+        <input type="text" id="guideSearch" class="search-bar" placeholder="Search for brand or model (e.g., Hikvision, Ring, Eufy)..." onkeyup="filterGuides()">
+        
+        <div id="guidesContainer" class="guide-grid">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Viewing Record in Form Format -->
+<div id="viewModal" class="modal no-print">
+    <div class="modal-content" id="modalDataContent">
+        <h2 style="color: var(--primary-color); text-align:center; margin-top:0;" class="no-print">Submitted Record Data</h2>
+        <div id="modalFormInject"></div>
+    </div>
+</div>
+
+<!-- Modal for Copying Statement -->
+<div id="mg11Modal" class="modal no-print">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('mg11Modal')" title="Close">&times;</span>
+        <h2 style="color: #6f42c1; text-align:center; margin-top:0;">Collection Statement</h2>
+        <p style="text-align:center; font-size: 0.9em; color: var(--text-color);">Review the statement below. Tap the button to copy it so you can paste it into your app or records.</p>
+        <textarea id="mg11Text" style="width: 100%; height: 350px; font-family: Arial, sans-serif; font-size: 14px; padding: 10px; line-height: 1.5; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical;" readonly></textarea>
+        <button onclick="copyMg11Text()" style="width: 100%; padding: 15px; background-color: #6f42c1; color: white; border: none; font-size: 1.1em; border-radius: 5px; margin-top: 15px; cursor: pointer;">Copy Statement to Clipboard</button>
+        <div id="copyFeedback" style="text-align:center; color: #28a745; font-weight: bold; display:none; margin-top: 10px;">Statement copied successfully!</div>
+    </div>
+</div>
+
+<script>
+    let uploadedPhotos = [];
+
+    // Service Worker Registration for PWA functionality
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+
+    function toggleDarkMode() {
+        const body = document.body;
+        body.classList.toggle('dark-mode');
+        localStorage.setItem('cctvDarkMode', body.classList.contains('dark-mode'));
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    function toggleCctvDetails() {
+        const isAvailable = document.getElementById('cctv_avail_yes').checked;
+        const detailsSection = document.getElementById('cctv-details-section');
+        const photoSection = document.getElementById('photo_section');
+        
+        detailsSection.style.display = isAvailable ? 'block' : 'none';
+        if(photoSection) photoSection.style.display = isAvailable ? 'block' : 'none';
+    }
+
+    function saveDraft() {
+        const form = document.getElementById('cctvForm');
+        const formData = new FormData(form);
+        const draftData = Object.fromEntries(formData.entries());
+        localStorage.setItem('cctvDraft', JSON.stringify(draftData));
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        document.getElementById('draftStatus').innerText = `Draft auto-saved locally at ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    document.getElementById('cctvForm').addEventListener('input', saveDraft);
+
+    function calculateAge() {
+        const dobInput = document.getElementById('dob').value;
+        const ageDisplay = document.getElementById('age_display');
+        if(!dobInput) { 
+            ageDisplay.innerText = ''; 
+            return; 
+        }
+        const dob = new Date(dobInput);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        ageDisplay.innerText = `(${age} years old)`;
+    }
+
+    function initForm() {
+        if (localStorage.getItem('cctvDarkMode') === 'true') document.body.classList.add('dark-mode');
+
+        const savedDraft = JSON.parse(localStorage.getItem('cctvDraft'));
+        const form = document.getElementById('cctvForm');
+
+        if (savedDraft) {
+            form.querySelectorAll('input, textarea, select').forEach(input => {
+                const fieldName = input.name;
+                if(fieldName && savedDraft[fieldName] !== undefined) {
+                    if(input.type === 'radio' || input.type === 'checkbox') input.checked = (input.value === savedDraft[fieldName]);
+                    else input.value = savedDraft[fieldName];
+                }
+            });
+            
+            if (!savedDraft['Reference Number']) {
+                document.getElementById('ref_number').value = "Generated upon submission";
+            }
+            
+            calculateAge();
+            calculateAdjustments();
+            updateOverwriteCalculation(); 
+            toggleCctvDetails();
+            
+            if (savedDraft['DVR Photos']) {
+                try {
+                    uploadedPhotos = JSON.parse(savedDraft['DVR Photos']);
+                    renderPhotoGallery();
+                } catch(e) {
+                    uploadedPhotos = [];
+                }
+            }
+
+            document.getElementById('draftStatus').innerText = "Draft restored.";
+        } else {
+            document.getElementById('ref_number').value = "Generated upon submission";
+            
+            const todayDate = new Date();
+            document.getElementById('date').value = `${todayDate.getFullYear()}-${String(todayDate.getMonth()+1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+            
+            const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+            if (logs.length > 0) {
+                document.getElementById('operation').value = logs[0]['Operation'] || '';
+                document.getElementById('person_attending').value = logs[0]['Person Attending'] || '';
+                document.getElementById('contact_number').value = logs[0]['Contact Number'] || '';
+            }
+            toggleCctvDetails();
+        }
+        loadLogs();
+        renderGuides();
+    }
+
+    function clearForm() {
+        if(confirm("Are you sure you want to clear this form and discard any saved draft?")) {
+            const op = document.getElementById('operation').value;
+            const pa = document.getElementById('person_attending').value;
+            const cn = document.getElementById('contact_number').value;
+
+            document.getElementById('cctvForm').reset();
+            localStorage.removeItem('cctvDraft');
+            document.getElementById('draftStatus').innerText = "";
+            document.getElementById('ref_number').value = "Generated upon submission";
+            document.getElementById('age_display').innerText = "";
+            document.getElementById('audio_no').checked = true;
+            document.getElementById('player_no').checked = true;
+            
+            uploadedPhotos = [];
+            renderPhotoGallery();
+
+            document.getElementById('operation').value = op;
+            document.getElementById('person_attending').value = pa;
+            document.getElementById('contact_number').value = cn;
+            
+            const now = new Date();
+            document.getElementById('date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+            document.getElementById('cctv_avail_yes').checked = true;
+            toggleCctvDetails();
+            calculateAdjustments();
+            updateOverwriteCalculation();
+            
+            saveDraft();
+        }
+    }
+
+    function searchInlineYT() {
+        const makeModel = document.getElementById('make_model').value.trim();
+        if (!makeModel) {
+            alert("Please type a make or model into the box first.");
+            return;
+        }
+        const ytSearchUrl = 'https://www.youtube.com/results?search_query=how+to+export+footage+' + encodeURIComponent(makeModel) + '+cctv';
+        window.open(ytSearchUrl, '_blank');
+    }
+
+    function openMaps() {
+        const address = document.getElementById('venue_address').value.trim();
+        const pc = document.getElementById('postcode').value.trim();
+        
+        const fullQuery = [address, pc].filter(Boolean).join(', ');
+        
+        if(!fullQuery) { 
+            alert('Please enter a venue address or postcode first.'); 
+            return; 
+        }
+        window.open('https://maps.google.com/?q=' + encodeURIComponent(fullQuery), '_blank');
+    }
+
+    function handlePhotoUpload(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        let filesProcessed = 0;
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600; 
+                    let scaleSize = MAX_WIDTH / img.width;
+                    if(scaleSize > 1) scaleSize = 1; 
+                    
+                    canvas.width = img.width * scaleSize;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const base64Str = canvas.toDataURL('image/jpeg', 0.5); 
+                    uploadedPhotos.push(base64Str);
+                    renderPhotoGallery();
+                    
+                    filesProcessed++;
+                    if(filesProcessed === files.length) {
+                        document.getElementById('dvr_photo').value = ''; 
+                        saveDraft();
+                    }
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderPhotoGallery() {
+        const gallery = document.getElementById('photo_gallery');
+        gallery.innerHTML = '';
+        document.getElementById('dvr_photos_base64').value = JSON.stringify(uploadedPhotos);
+        
+        uploadedPhotos.forEach((photoStr, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'photo-wrapper';
+            
+            const img = document.createElement('img');
+            img.src = photoStr;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = 'X';
+            removeBtn.title = "Remove photo";
+            removeBtn.type = "button";
+            removeBtn.onclick = function() {
+                uploadedPhotos.splice(index, 1);
+                renderPhotoGallery();
+                saveDraft();
+            };
+            
+            wrapper.appendChild(img);
+            wrapper.appendChild(removeBtn);
+            gallery.appendChild(wrapper);
+        });
+    }
+
+    function formatUKDateTime(dtStr, isDateOnly = false) {
+        if (!dtStr) return '';
+        const parts = dtStr.split('T');
+        const dateParts = parts[0].split('-'); 
+        if (dateParts.length !== 3) return dtStr; 
+        
+        const ukDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        
+        if (isDateOnly) return ukDate;
+        
+        if (parts.length > 1) {
+            let timeStr = parts[1];
+            if (timeStr.length === 5) timeStr += ':00'; 
+            return `${ukDate} ${timeStr}`;
+        }
+        return ukDate;
+    }
+
+    document.querySelectorAll('.time-calc').forEach(input => input.addEventListener('change', calculateAdjustments));
+
+    function formatForDateTimeLocal(dateObj) {
+        if (isNaN(dateObj.getTime())) return '';
+        const pad = num => num.toString().padStart(2, '0');
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+    }
+
+    function formatTimeDifference(ms) {
+        if (ms === 0) return "Synchronised - 0 seconds difference";
+        const status = ms > 0 ? "slow" : "fast";
+        const totalSeconds = Math.floor(Math.abs(ms) / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        let result = "";
+        if (days > 0) result += `${days} Day${days !== 1 ? 's' : ''}, `;
+        result += `${hours} hour${hours !== 1 ? 's' : ''} `;
+        result += `${minutes} minute${minutes !== 1 ? 's' : ''} `;
+        result += `${seconds} second${seconds !== 1 ? 's' : ''} ${status}`;
+        return result.trim();
+    }
+
+    function formatDuration(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        let res = [];
+        if(days > 0) res.push(`${days}d`);
+        if(hours > 0) res.push(`${hours}h`);
+        if(minutes > 0) res.push(`${minutes}m`);
+        if(seconds > 0 || res.length === 0) res.push(`${seconds}s`);
+        return res.join(' ');
+    }
+
+    function calculateAdjustments() {
+        const sysVal = document.getElementById('system_time').value;
+        const realVal = document.getElementById('real_time').value;
+        let offsetMs = null;
+
+        if (sysVal && realVal) {
+            offsetMs = new Date(realVal).getTime() - new Date(sysVal).getTime();
+            document.getElementById('time_difference').value = formatTimeDifference(offsetMs);
+        } else {
+            document.getElementById('time_difference').value = "";
+        }
+
+        const incStart = document.getElementById('incident_start').value;
+        const incEnd = document.getElementById('incident_end').value;
+
+        if (offsetMs !== null && incStart && incEnd) {
+            document.getElementById('dl_start').value = formatForDateTimeLocal(new Date(new Date(incStart).getTime() - offsetMs));
+            document.getElementById('dl_end').value = formatForDateTimeLocal(new Date(new Date(incEnd).getTime() - offsetMs));
+        } else {
+            document.getElementById('dl_start').value = "";
+            document.getElementById('dl_end').value = "";
+        }
+
+        const durationDisplay = document.getElementById('incident_duration');
+        if (incStart && incEnd) {
+            const startMs = new Date(incStart).getTime();
+            const endMs = new Date(incEnd).getTime();
+            if (endMs >= startMs) {
+                const diffMs = endMs - startMs;
+                durationDisplay.innerText = "Duration: " + formatDuration(diffMs);
+            } else {
+                durationDisplay.innerText = "Duration: Invalid (End time is before Start time)";
+            }
+        } else {
+            durationDisplay.innerText = "";
+        }
+    }
+
+    document.getElementById('earliest_footage').addEventListener('change', updateOverwriteCalculation);
+    document.getElementById('incident_start').addEventListener('change', updateOverwriteCalculation);
+
+    function updateOverwriteCalculation() {
+        const earlyInput = document.getElementById('earliest_footage').value;
+        const owInput = document.getElementById('overwrite_data');
+        
+        owInput.classList.remove('priority-flash');
+        
+        if (earlyInput) {
+            const earliestDate = new Date(earlyInput);
+            earliestDate.setHours(0,0,0,0);
+            let targetDate = document.getElementById('incident_start').value ? new Date(document.getElementById('incident_start').value) : new Date();
+            targetDate.setHours(0,0,0,0);
+            const diffDays = Math.floor((targetDate - earliestDate) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays >= 0) {
+                if (diffDays < 7) {
+                    owInput.value = `${diffDays} Day${diffDays !== 1 ? "s" : ""} remaining - PRIORITY`;
+                    owInput.classList.add('priority-flash');
+                } else {
+                    owInput.value = `${diffDays} Day${diffDays !== 1 ? "s" : ""} remaining`;
+                    owInput.style.color = "";
+                    owInput.style.fontWeight = "normal";
+                }
+            } else {
+                owInput.value = "0 Days remaining (Overwritten)";
+                owInput.classList.add('priority-flash');
+            }
+        } else {
+            owInput.value = "";
+            owInput.style.color = "";
+            owInput.style.fontWeight = "normal";
+        }
+    }
+
+    function generateRawPDF(data, safeRef, btnElement, originalText) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        let y = 20; 
+        const margin = 15;
+        const pageWidth = 210;
+        const usableW = pageWidth - (margin * 2);
+        const halfW = (usableW - 5) / 2; 
+
+        function checkPage(needed) {
+            if (y + needed > 285) { doc.addPage(); y = 20; }
+        }
+
+        doc.setFontSize(18);
+        doc.setTextColor(0, 86, 179);
+        doc.setFont("helvetica", "bold");
+        doc.text("CCTV Retrieval System", 105, y, { align: "center" });
+        y += 12;
+
+        function drawSectionHeader(title) {
+            checkPage(15);
+            doc.setFillColor(250, 250, 250); 
+            doc.setDrawColor(204, 204, 204); 
+            doc.rect(margin, y, usableW, 9, 'FD'); 
+            
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 86, 179); 
+            doc.text(title, margin + 3, y + 6);
+            y += 13;
+        }
+
+        function drawField(x, yPos, w, label, val, isMulti = false, customBg = null, customBorder = null) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(51, 51, 51);
+            doc.text(label, x, yPos);
+            
+            let boxY = yPos + 2;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            
+            let textLines = doc.splitTextToSize(String(val || ''), w - 4);
+            let boxH = isMulti ? Math.max(10, (textLines.length * 4) + 6) : 9;
+            
+            if (customBg) {
+                doc.setFillColor(customBg[0], customBg[1], customBg[2]);
+            } else {
+                doc.setFillColor(255, 255, 255); 
+            }
+            
+            if (customBorder) {
+                doc.setDrawColor(customBorder[0], customBorder[1], customBorder[2]);
+            } else {
+                doc.setDrawColor(204, 204, 204); 
+            }
+
+            doc.rect(x, boxY, w, boxH, 'FD');
+            
+            if(label === "Unique Reference Number") doc.setTextColor(133, 100, 4);
+            
+            doc.text(textLines, x + 2, boxY + 6);
+            return boxY + boxH + 5; 
+        }
+        
+        drawSectionHeader("General Information");
+        let nextY = drawField(margin, y, usableW, "Unique Reference Number", data['Reference Number'], false, [255, 243, 205], [255, 238, 186]); 
+        y = nextY;
+        let y1 = drawField(margin, y, halfW, "Operation", data['Operation']);
+        let y2 = drawField(margin + halfW + 5, y, halfW, "Date", formatUKDateTime(data['Date'], true));
+        y = Math.max(y1, y2);
+        y1 = drawField(margin, y, halfW, "Person Attending", data['Person Attending']);
+        y2 = drawField(margin + halfW + 5, y, halfW, "Contact Number", data['Contact Number']);
+        y = Math.max(y1, y2) + 2;
+
+        checkPage(40);
+        drawSectionHeader("Venue & Contact Details");
+        y = drawField(margin, y, usableW, "Venue Name / Address", data['Venue Address'], true);
+        y1 = drawField(margin, y, halfW, "Postcode", data['Postcode']);
+        y2 = drawField(margin + halfW + 5, y, halfW, "Contact Name", data['Venue Contact Name']);
+        y = Math.max(y1, y2);
+        y1 = drawField(margin, y, halfW, "Date of Birth", formatUKDateTime(data['Contact DOB'], true));
+        y2 = drawField(margin + halfW + 5, y, halfW, "Telephone Number", data['Venue Telephone']);
+        y = Math.max(y1, y2);
+        y = drawField(margin, y, usableW, "Venue Notes", data['Venue Notes'], true);
+        y = drawField(margin, y, usableW, "Is CCTV Available?", data['CCTV Available']);
+        y += 2;
+
+        if (data['CCTV Available'] !== 'No') {
+            checkPage(45);
+            drawSectionHeader("System Details");
+            y1 = drawField(margin, y, halfW, "CCTV System Make/Model", data['System Make and Model']);
+            y2 = drawField(margin + halfW + 5, y, halfW, "Total Number of Cameras", data['Total Cameras']);
+            y = Math.max(y1, y2);
+            y = drawField(margin, y, usableW, "System Username / Passwords", data['System Credentials']);
+            y1 = drawField(margin, y, halfW, "Earliest Footage Available", formatUKDateTime(data['Earliest Footage']));
+            y2 = drawField(margin + halfW + 5, y, halfW, "When will system overwrite data?", data['Overwrite Timeline']);
+            y = Math.max(y1, y2) + 2;
+
+            checkPage(50);
+            drawSectionHeader("Time Sync & Footage Adjustments");
+            y1 = drawField(margin, y, halfW, "DVR System Date & Time", formatUKDateTime(data['DVR Time']));
+            y2 = drawField(margin + halfW + 5, y, halfW, "Real Date & Time", formatUKDateTime(data['Real Time Sync']));
+            y = Math.max(y1, y2);
+            y = drawField(margin, y, usableW, "Time Difference", data['Calculated Time Difference']);
+            y1 = drawField(margin, y, halfW, "Real Time of Incident (Start)", formatUKDateTime(data['Incident Start (Real Time)']));
+            y2 = drawField(margin + halfW + 5, y, halfW, "Real Time of Incident (End)", formatUKDateTime(data['Incident End (Real Time)']));
+            y = Math.max(y1, y2) + 2;
+            
+            doc.setFillColor(232, 244, 248); 
+            doc.setDrawColor(0, 86, 179); 
+            doc.rect(margin, y, usableW, 23, 'FD');
+            let calcY = y + 5;
+            doc.setFontSize(10); 
+            doc.setTextColor(0, 86, 179); 
+            doc.setFont("helvetica", "bold");
+            doc.text("Adjusted DVR Download Times", margin + 3, calcY);
+            calcY += 4;
+            drawField(margin + 3, calcY, halfW - 4, "DVR Search Start Time", formatUKDateTime(data['DVR Download Start Time']));
+            drawField(margin + halfW + 5, calcY, halfW - 4, "DVR Search End Time", formatUKDateTime(data['DVR Download End Time']));
+            y += 28;
+
+            checkPage(50);
+            drawSectionHeader("Download Specifics");
+            y1 = drawField(margin, y, halfW, "Downloaded Footage Start", formatUKDateTime(data['Downloaded Footage Start']));
+            y2 = drawField(margin + halfW + 5, y, halfW, "Downloaded Footage End", formatUKDateTime(data['Downloaded Footage End']));
+            y = Math.max(y1, y2);
+            y1 = drawField(margin, y, halfW, "Cameras Downloaded", data['Cameras Downloaded']);
+            y2 = drawField(margin + halfW + 5, y, halfW, "Format of Footage", data['Footage Format']);
+            y = Math.max(y1, y2);
+            y1 = drawField(margin, y, halfW, "Download Method", data['Download Method']);
+            y2 = drawField(margin + halfW + 5, y, halfW, "Memory Stick No. / Disc Ref", data['Media Reference']);
+            y = Math.max(y1, y2);
+            y1 = drawField(margin, y, halfW, "Player Downloaded?", data['Player Downloaded']);
+            y2 = drawField(margin + halfW + 5, y, halfW, "Audio Recorded?", data['Audio Recorded']);
+            y = Math.max(y1, y2) + 2;
+
+            checkPage(30);
+            drawSectionHeader("Additional Exhibits");
+            y = drawField(margin, y, usableW, "Additional CCTV Notes", data['Notes'], true);
+            y = drawField(margin, y, usableW, "Exhibit Number", data['Exhibit Number']);
+        }
+
+        let photos = [];
+        if(data['DVR Photos']) {
+            try { photos = JSON.parse(data['DVR Photos']); } catch(e) {}
+        }
+        
+        if (photos.length > 0) {
+            photos.forEach((photoStr, idx) => {
+                doc.addPage();
+                let imgY = 20;
+                doc.setFontSize(14);
+                doc.setTextColor(0, 86, 179);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Appendix: DVR System Photo (${idx + 1} of ${photos.length})`, 105, imgY, { align: "center" });
+                
+                try {
+                    const props = doc.getImageProperties(photoStr);
+                    const maxImgW = usableW;
+                    const ratio = props.height / props.width;
+                    let imgH = maxImgW * ratio;
+                    
+                    if (imgH > 230) {
+                        imgH = 230;
+                        const newW = imgH / ratio;
+                        doc.addImage(photoStr, 'JPEG', 105 - (newW / 2), imgY + 15, newW, imgH);
+                    } else {
+                        doc.addImage(photoStr, 'JPEG', margin, imgY + 15, maxImgW, imgH);
+                    }
+                } catch(e) {
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(255, 0, 0);
+                    doc.text("Error rendering image. Corrupt Base64 data.", margin, imgY + 20);
+                }
+            });
+        }
+
+        doc.save(safeRef + '.pdf');
+
+        if(btnElement && originalText) {
+            btnElement.innerText = originalText;
+            btnElement.disabled = false;
+        }
+    }
+
+    function submitAndDownloadPDF() {
+        const form = document.getElementById('cctvForm');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        if (!confirm("Are you sure you are ready to submit this record and download the PDF?")) {
+            return;
+        }
+
+        const btn = document.getElementById('pdfSubmitBtn');
+        const originalText = btn.innerText;
+        btn.innerText = "Generating PDF...";
+        btn.disabled = true;
+
+        const pad = n => n.toString().padStart(2, '0');
+        const now = new Date();
+        const exactDateTime = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        document.getElementById('ref_number').value = exactDateTime;
+
+        const formData = new FormData(form);
+        const fullRecord = Object.fromEntries(formData.entries());
+
+        let logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        logs.unshift(fullRecord);
+        localStorage.setItem('cctvFullLogs', JSON.stringify(logs));
+        
+        const safeRef = exactDateTime.replace(/[\/\s:]/g, '-');
+        
+        generateRawPDF(fullRecord, safeRef, btn, originalText);
+
+        const prevOp = document.getElementById('operation').value;
+        const prevPerson = document.getElementById('person_attending').value;
+        const prevContact = document.getElementById('contact_number').value;
+
+        form.reset();
+        localStorage.removeItem('cctvDraft');
+        document.getElementById('draftStatus').innerText = "Form submitted successfully. Ready for next entry.";
+        
+        document.getElementById('ref_number').value = "Generated upon submission";
+        
+        const freshDate = new Date();
+        document.getElementById('date').value = `${freshDate.getFullYear()}-${String(freshDate.getMonth()+1).padStart(2, '0')}-${String(freshDate.getDate()).padStart(2, '0')}`;
+        
+        document.getElementById('operation').value = prevOp;
+        document.getElementById('person_attending').value = prevPerson;
+        document.getElementById('contact_number').value = prevContact;
+        
+        document.getElementById('age_display').innerText = "";
+        document.getElementById('audio_no').checked = true;
+        document.getElementById('player_no').checked = true;
+        
+        uploadedPhotos = [];
+        document.getElementById('photo_gallery').innerHTML = '';
+        document.getElementById('dvr_photos_base64').value = '';
+
+        document.getElementById('cctv_avail_yes').checked = true;
+        toggleCctvDetails();
+        calculateAdjustments();
+        updateOverwriteCalculation();
+
+        loadLogs();
+    }
+
+    function amendLog(index) {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        const record = logs[index];
+        if(!record) return;
+        
+        if(confirm("Load this record into the form? Submitting will save it as a new updated log entry, keeping the original intact.")) {
+            const draftData = { ...record };
+            delete draftData['Reference Number']; 
+            
+            localStorage.setItem('cctvDraft', JSON.stringify(draftData));
+            initForm();
+            switchTab('form-tab');
+            document.getElementById('draftStatus').innerText = "Historical record loaded for amendment.";
+        }
+    }
+
+    function loadLogs() {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        const tbody = document.getElementById('logTableBody');
+        const emptyMsg = document.getElementById('emptyLogMessage');
+        tbody.innerHTML = '';
+
+        if (logs.length === 0) {
+            emptyMsg.style.display = 'block';
+        } else {
+            emptyMsg.style.display = 'none';
+            logs.forEach((log, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${log['Reference Number'] || 'N/A'}</strong></td>
+                    <td>${log['Operation'] || ''}</td>
+                    <td>${log['Venue Address'] || ''}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="view-btn" onclick="viewLog(${index})">View</button>
+                            <button class="amend-btn" onclick="amendLog(${index})">Amend</button>
+                            <button class="mg11-btn" onclick="generateMG11(${index})">Statement</button>
+                            <button class="print-btn" onclick="downloadLogPDF(${index}, this)">Save PDF</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    }
+
+    function downloadLogPDF(index, btnElement) {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        const record = logs[index];
+        if(!record) return;
+
+        const safeRef = record['Reference Number'] ? record['Reference Number'].replace(/[\/\s:]/g, '-') : 'Historical_Log';
+        const originalText = btnElement ? btnElement.innerText : "Save PDF";
+        
+        if(btnElement) { 
+            btnElement.innerText = "Saving..."; 
+            btnElement.disabled = true; 
+        }
+
+        generateRawPDF(record, safeRef, btnElement, originalText);
+    }
+
+    function viewLog(index) {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        const record = logs[index];
+        const contentDiv = document.getElementById('modalFormInject');
+        contentDiv.innerHTML = ''; 
+
+        if(record) {
+            const formClone = document.getElementById('cctvForm').cloneNode(true);
+            formClone.id = 'clonedViewForm';
+            formClone.onsubmit = null;
+
+            formClone.querySelectorAll('.no-print').forEach(el => el.remove());
+
+            formClone.querySelectorAll('input, textarea, select').forEach(input => {
+                const fieldName = input.name;
+                if(fieldName && record[fieldName] !== undefined) {
+                    if(input.type === 'radio' || input.type === 'checkbox') {
+                        if(input.value === record[fieldName]) input.setAttribute('checked', 'checked');
+                    } else {
+                        input.value = record[fieldName];
+                        if(input.tagName === 'TEXTAREA') input.innerHTML = record[fieldName];
+                    }
+                }
+                input.disabled = true;
+            });
+
+            const isNo = record['CCTV Available'] === 'No';
+            const detailsSection = formClone.querySelector('#cctv-details-section');
+            if(detailsSection) detailsSection.style.display = isNo ? 'none' : 'block';
+            
+            let photos = [];
+            if(record['DVR Photos']) {
+                try { photos = JSON.parse(record['DVR Photos']); } catch(e) {}
+            }
+            
+            const gallery = formClone.querySelector('#photo_gallery');
+            if (gallery && photos.length > 0) {
+                gallery.innerHTML = '';
+                
+                gallery.style.display = 'flex';
+                gallery.style.flexWrap = 'wrap';
+                gallery.style.gap = '10px';
+                
+                photos.forEach((photoStr) => {
+                    const img = document.createElement('img');
+                    img.src = photoStr;
+                    img.style.width = '100px';
+                    img.style.height = '100px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '5px';
+                    img.style.border = '1px solid var(--border-color)';
+                    gallery.appendChild(img);
+                });
+            }
+
+            contentDiv.appendChild(formClone);
+        }
+        document.getElementById('viewModal').style.display = 'block';
+    }
+
+    function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('viewModal')) closeModal('viewModal');
+        if (event.target == document.getElementById('mg11Modal')) closeModal('mg11Modal');
+    }
+
+    function generateMG11(index) {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        const log = logs[index];
+        if(!log) return;
+
+        const date = formatUKDateTime(log['Date'], true) || '[Date Not Recorded]';
+        const venue = log['Venue Address'] || '[Venue Not Recorded]';
+        const operation = log['Operation'] || '[Operation Not Recorded]';
+        
+        let statementText = "";
+
+        if (log['CCTV Available'] === 'No') {
+            const vNotes = log['Venue Notes'] ? `\n\nNotes regarding venue: ${log['Venue Notes']}` : '';
+            statementText = 
+`On ${date} I was on duty when I attended ${venue} in relation to Operation ${operation}.
+
+I conducted CCTV enquiries at this location. I can confirm that there is no CCTV available at this venue.${vNotes}
+
+I make this statement to record a negative CCTV enquiry.`;
+
+        } else {
+            const contact = log['Venue Contact Name'] || '[Contact Name Not Recorded]';
+            const makeModel = log['System Make and Model'] || '[Make/Model Not Recorded]';
+            const totalCameras = log['Total Cameras'] || '[Number]';
+            const dvrTime = formatUKDateTime(log['DVR Time']) || '[Not Recorded]';
+            const realTime = formatUKDateTime(log['Real Time Sync']) || '[Not Recorded]';
+            const timeDiff = log['Calculated Time Difference'] || '[Difference Not Recorded]';
+            
+            const dlFootageStart = formatUKDateTime(log['Downloaded Footage Start']) || '[Not Recorded]';
+            const dlFootageEnd = formatUKDateTime(log['Downloaded Footage End']) || '[Not Recorded]';
+            const camerasDl = log['Cameras Downloaded'] || '[Cameras Not Recorded]';
+            const format = log['Footage Format'] || '[Format Not Recorded]';
+            const method = log['Download Method'] || '[Method Not Recorded]';
+            const exhibit = log['Exhibit Number'] || '[Exhibit No Not Recorded]';
+            const player = log['Player Downloaded'] === 'Yes' ? ' A proprietary viewing player was also downloaded onto the media.' : '';
+            const audioStr = log['Audio Recorded'] === 'Yes' ? ' I can confirm the exported footage includes an audio track.' : '';
+
+            statementText = 
+`On ${date} I was on duty when I attended ${venue} in relation to Operation ${operation}.
+
+Whilst there, I spoke with the system operator, ${contact}. I was shown the premises' CCTV system, which is a ${makeModel} system consisting of ${totalCameras} cameras in total.
+
+To ensure evidential integrity, I checked the DVR system time against the real time. I noted that the DVR time was ${dvrTime} whilst the real time was ${realTime}. This means the system was ${timeDiff}.
+
+I identified relevant footage on cameras ${camerasDl}. I downloaded this footage (spanning from ${dlFootageStart} to ${dlFootageEnd}) in ${format} format onto a ${method}.${player}${audioStr}
+
+I subsequently exhibited this media as ${exhibit}.`;
+        }
+
+        document.getElementById('mg11Text').value = statementText;
+        document.getElementById('copyFeedback').style.display = 'none'; 
+        document.getElementById('mg11Modal').style.display = 'block';
+    }
+
+    function copyMg11Text() {
+        const textToCopy = document.getElementById('mg11Text');
+        textToCopy.select();
+        textToCopy.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(textToCopy.value).then(() => {
+            document.getElementById('copyFeedback').style.display = 'block';
+        }).catch(err => {
+            alert('Failed to copy text. Please select it manually.');
+        });
+    }
+
+    function exportLogToCSV() {
+        const logs = JSON.parse(localStorage.getItem('cctvFullLogs')) || [];
+        if (logs.length === 0) { alert("There are no records in the log to export."); return; }
+
+        const allHeaders = Array.from(new Set(logs.flatMap(Object.keys)));
+        let csvContent = allHeaders.join(',') + '\n';
+
+        logs.forEach(log => {
+            const row = allHeaders.map(header => {
+                let cellData = log[header] === undefined || log[header] === null ? '' : String(log[header]);
+                if (cellData.includes(',') || cellData.includes('"') || cellData.includes('\n')) {
+                    cellData = `"${cellData.replace(/"/g, '""')}"`;
+                }
+                return cellData;
+            });
+            csvContent += row.join(',') + '\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        const now = new Date();
+        const safeDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `CCTV_Submission_Log_${safeDate}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    const cctvGuides = [
+        { brand: "Abus", user: "admin", pass: "12345", ip: "192.168.0.100", notes: "Default port often 8000.", url: "https://www.abus.com/uk/Service/Manuals" },
+        { brand: "ACTi", user: "Admin", pass: "123456", ip: "192.168.0.100", notes: "Note case sensitivity: 'Admin'.", url: "https://www.acti.com/support" },
+        { brand: "ADT", user: "admin", pass: "admin", ip: "DHCP", notes: "Often rebranded from Dahua or Hikvision.", url: "https://www.adt.com/help" },
+        { brand: "Aimetis / Senstar", user: "root", pass: "root", ip: "DHCP", notes: "Symphony VMS. Passwords often customized during deployment.", url: "https://senstar.com/support/" },
+        { brand: "Alibi", user: "admin", pass: "1111111", ip: "192.168.1.100", notes: "Often requires password change on first login.", url: "https://www.alibisecurity.com/support" },
+        { brand: "Altronix", user: "admin", pass: "admin", ip: "192.168.168.168", notes: "NetWay devices (network/power management).", url: "https://www.altronix.com/support" },
+        { brand: "Amcrest", user: "admin", pass: "admin", ip: "10.1.1.65 / DHCP", notes: "Prompts to change on first login. Heavily based on Dahua architecture.", url: "https://amcrest.com/support" },
+        { brand: "American Dynamics (Tyco)", user: "admin", pass: "admin", ip: "192.168.1.254", notes: "VideoEdge VMS or Intellex DVRs (Legacy).", url: "https://www.americandynamics.net/support/" },
+        { brand: "Annke", user: "admin", pass: "12345 / (blank)", ip: "192.168.1.100", notes: "Often uses the same underlying firmware/OS as Hikvision.", url: "https://help.annke.com/" },
+        { brand: "Arecont Vision", user: "admin", pass: "admin / (blank)", ip: "192.168.0.80", notes: "AV200 utility helps locate IP.", url: "https://arecontvision.com/" },
+        { brand: "Arlo (Cloud App)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Arlo Secure app > Library > Select video > Share > Save Video.", url: "https://kb.arlo.com/" },
+        { brand: "Aventura", user: "admin", pass: "12345", ip: "192.168.1.100", notes: "Legacy and enterprise.", url: "https://www.aventuracctv.com/support" },
+        { brand: "AvertX", user: "admin", pass: "1234", ip: "192.168.0.100", notes: "ProConnect NVRs.", url: "https://www.avertx.com/support/" },
+        { brand: "Avigilon", user: "administrator", pass: "(blank) / admin", ip: "169.254.1.2", notes: "ZeroConf IP used if no DHCP. Usually a blank password initially.", url: "https://www.avigilon.com/support" },
+        { brand: "Axis", user: "root", pass: "pass / root", ip: "192.168.0.90", notes: "Axis IP Utility can be used to find units on the network. Prompts to change password on first login.", url: "https://www.axis.com/support" },
+        { brand: "Baxall", user: "admin", pass: "admin", ip: "192.168.1.10", notes: "Older legacy units. Company defunct.", url: "https://www.google.com/search?q=Baxall+CCTV+manual" },
+        { brand: "Blink (Cloud App)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Blink app > Clips icon > Select clip > Share > Save Video.", url: "https://support.blinkforhome.com/" },
+        { brand: "Bolide", user: "admin", pass: "123456", ip: "192.168.1.100", notes: "Often uses port 8000.", url: "https://bolideco.com/support" },
+        { brand: "Bosch", user: "service", pass: "service", ip: "192.168.0.1", notes: "Older units might use 'admin'/'admin'. Bosch Configuration Manager is highly recommended.", url: "https://www.boschsecurity.com/xc/en/support/" },
+        { brand: "Brickcom", user: "admin", pass: "admin", ip: "192.168.1.1", notes: "Usually straightforward.", url: "https://www.brickcom.com/support/" },
+        { brand: "Cathexis", user: "Admin", pass: "Admin", ip: "DHCP", notes: "CathexisVision VMS.", url: "https://cathexisvideo.com/support/" },
+        { brand: "CCTV Security Pros", user: "admin", pass: "123456", ip: "192.168.1.108", notes: "Often Dahua or TVT OEM.", url: "https://www.cctvsecuritypros.com/support/" },
+        { brand: "Cisco", user: "root", pass: "system", ip: "DHCP", notes: "Enterprise class. May be locked down by IT.", url: "https://www.cisco.com/c/en/us/support/index.html" },
+        { brand: "Clinton Electronics", user: "admin", pass: "admin", ip: "192.168.1.200", notes: "Shadow/Flight series DVRs.", url: "https://clintonelectronics.com/support/" },
+        { brand: "Concept Pro", user: "admin", pass: "admin", ip: "192.168.1.100", notes: "VHD/VXH series usually standard admin/admin.", url: "https://www.google.com/search?q=Concept+Pro+CCTV+manual" },
+        { brand: "Costar", user: "admin", pass: "admin", ip: "192.168.122.200", notes: "Often uses port 80.", url: "https://costarvideo.com/support/" },
+        { brand: "Costco (various)", user: "admin", pass: "(blank) or 123456", ip: "DHCP", notes: "Swann, Lorex, Q-See, AvertX depending on era.", url: "https://www.google.com/search?q=Costco+CCTV+manual" },
+        { brand: "CP Plus", user: "admin", pass: "admin / 123456", ip: "192.168.1.108", notes: "Dahua OEM in many regions.", url: "https://www.cppluscorp.com/support" },
+        { brand: "Dahua", user: "admin", pass: "admin", ip: "192.168.1.108", notes: "Default is admin/admin. Account lockouts happen after 5 failed attempts.", url: "https://www.dahuasecurity.com/support/" },
+        { brand: "Dedicated Micros", user: "dm", pass: "web", ip: "192.168.0.250", notes: "Legacy brand. Very common in old UK retail.", url: "https://www.google.com/search?q=Dedicated+Micros+manual" },
+        { brand: "Defender", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Consumer grade, usually leaves password blank by default.", url: "https://www.defendercameras.com/support" },
+        { brand: "Digital Watchdog", user: "admin", pass: "admin", ip: "192.168.1.100", notes: "DW Spectrum IPVMS.", url: "https://digital-watchdog.com/support/" },
+        { brand: "Eufy (Cloud App)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Eufy Security app > Events > Select video > Download icon.", url: "https://support.eufylife.com/" },
+        { brand: "Exacq / ExacqVision", user: "admin", pass: "admin256", ip: "DHCP", notes: "Enterprise grade, passwords usually complexed by installers.", url: "https://exacq.com/support/" },
+        { brand: "Exvision", user: "admin", pass: "123456", ip: "192.168.1.10", notes: "Legacy DVRs.", url: "https://www.google.com/search?q=Exvision+DVR+manual" },
+        { brand: "FLIR", user: "admin", pass: "fliradmin", ip: "192.168.0.250", notes: "Can also be admin/admin.", url: "https://www.flir.com/support/" },
+        { brand: "Foscam", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Requires configuration via their app/web portal.", url: "https://foscam.com/downloads/index.html" },
+        { brand: "Genetec", user: "administrator", pass: "admin", ip: "DHCP", notes: "Omnicast systems.", url: "https://www.genetec.com/support" },
+        { brand: "GeoVision", user: "admin", pass: "admin", ip: "192.168.0.10", notes: "Can also be 12345 on some NVR variants.", url: "https://www.geovision.com.tw/support.php" },
+        { brand: "Geutebruck", user: "root", pass: "geutebrueck", ip: "192.168.0.100", notes: "High-end enterprise systems.", url: "https://www.geutebrueck.com/" },
+        { brand: "Google Nest (Cloud App)", user: "N/A (App Based)", pass: "N/A", ip: "Cloud App", notes: "Open Google Home app > Camera > History > Event Details > Download icon.", url: "https://support.google.com/googlenest/" },
+        { brand: "Grandstream", user: "admin", pass: "admin", ip: "192.168.1.168", notes: "Often port 80.", url: "https://www.grandstream.com/support" },
+        { brand: "GW Security", user: "admin", pass: "123456", ip: "192.168.1.100", notes: "Default passwords can also be blank.", url: "https://www.gwsecurityusa.com/support" },
+        { brand: "Hanwha Vision / Samsung", user: "admin", pass: "4321 / admin", ip: "192.168.1.200", notes: "Default is often 4321 on older units. Newer ones force complex password creation.", url: "https://hanwhavision.com/en/support/" },
+        { brand: "Hikvision", user: "admin", pass: "12345 / 123456789a", ip: "192.0.0.64", notes: "Newer models force password creation on first boot. SAPD tool used for network resets.", url: "https://www.hikvision.com/en/support/" },
+        { brand: "Honeywell", user: "admin", pass: "1234", ip: "192.168.1.108", notes: "Sometimes admin/admin or admin/123456.", url: "https://buildings.honeywell.com/us/en/support" },
+        { brand: "IC Realtime", user: "admin", pass: "admin", ip: "192.168.1.108", notes: "Heavily based on Dahua. Prompts for password change.", url: "https://icrealtime.com/support" },
+        { brand: "Ikegami", user: "admin", pass: "admin", ip: "192.168.0.10", notes: "High end systems.", url: "https://www.ikegami.com/support" },
+        { brand: "IndigoVision", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Often controlled by Control Center software.", url: "https://www.indigovision.com/" },
+        { brand: "Infinova", user: "admin", pass: "123456", ip: "192.168.1.100", notes: "Used in critical infrastructure.", url: "https://www.infinova.com/" },
+        { brand: "InVid", user: "admin", pass: "123456", ip: "192.168.1.100", notes: "Often OEM.", url: "https://www.invidtech.com/support/" },
+        { brand: "Kasa (TP-Link)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Kasa app > Activity > Select clip > Download icon.", url: "https://www.tp-link.com/support/" },
+        { brand: "Lorex", user: "admin", pass: "000000 / admin", ip: "192.168.0.108", notes: "If 000000 fails, try leaving it blank.", url: "https://help.lorextechnology.com/" },
+        { brand: "LTS", user: "admin", pass: "12345", ip: "192.168.1.64", notes: "Hikvision OEM. Uses NVMS7000.", url: "https://ltsecurityinc.com/support" },
+        { brand: "Luma Surveillance", user: "admin", pass: "admin", ip: "DHCP", notes: "Often integrated with OvrC. Web interface port 80.", url: "https://www.snapav.com/" },
+        { brand: "Luxriot", user: "Admin", pass: "(blank)", ip: "DHCP", notes: "Evo VMS. Passwords usually set during install.", url: "https://www.luxriot.com/support/" },
+        { brand: "Mace", user: "admin", pass: "111111", ip: "192.168.1.10", notes: "Legacy analog and early IP.", url: "https://www.google.com/search?q=Mace+CCTV+manual" },
+        { brand: "March Networks", user: "admin", pass: "admin / (blank)", ip: "DHCP", notes: "Often used in retail/banking. IP admin tool needed to set static.", url: "https://www.marchnetworks.com/support/" },
+        { brand: "Merit Lilin", user: "admin", pass: "admin / 1111", ip: "192.168.0.200", notes: "Also try pass 'pass'.", url: "https://www.meritlilin.com/en/support" },
+        { brand: "Milestone Systems", user: "admin", pass: "admin", ip: "DHCP", notes: "XProtect software. Usually integrated with Windows AD.", url: "https://www.milestonesys.com/support/" },
+        { brand: "Mobotix", user: "admin", pass: "meinsm", ip: "10.x.x.x", notes: "Unique IP address scheme based on MAC address.", url: "https://www.mobotix.com/en/support" },
+        { brand: "Montavue", user: "admin", pass: "admin", ip: "192.168.1.108", notes: "Dahua OEM.", url: "https://montavue.com/support/" },
+        { brand: "Night Owl", user: "admin", pass: "(blank) / admin", ip: "DHCP", notes: "Consumer grade. Will lock you out if attempted multiple times.", url: "https://support.nightowlsp.com/" },
+        { brand: "Northern", user: "admin", pass: "123456", ip: "192.168.1.100", notes: "Often TVT OEM.", url: "https://northernvideo.com/support/" },
+        { brand: "OnSSI", user: "admin", pass: "admin", ip: "DHCP", notes: "Ocularis VMS (now Qognify).", url: "https://www.qognify.com/support/" },
+        { brand: "OpenEye", user: "admin", pass: "1234", ip: "192.168.51.2", notes: "Web Services VMS.", url: "https://www.openeye.net/support" },
+        { brand: "Optiview", user: "admin", pass: "admin", ip: "192.168.1.108", notes: "Dahua OEM.", url: "https://optiviewusa.com/support/" },
+        { brand: "Panasonic / i-PRO", user: "admin", pass: "12345", ip: "192.168.0.10", notes: "Can also be admin/admin.", url: "https://i-pro.com/global/en/surveillance/support" },
+        { brand: "Pelco", user: "admin", pass: "admin", ip: "192.168.0.20", notes: "Default web port is often 80.", url: "https://www.pelco.com/support/" },
+        { brand: "Q-See", user: "admin", pass: "123456 / admin", ip: "192.168.1.100", notes: "Company is defunct. Defaults are usually very basic.", url: "https://www.google.com/search?q=Q-See+DVR+manual" },
+        { brand: "QNAP", user: "admin", pass: "admin", ip: "DHCP", notes: "NAS based NVR.", url: "https://www.qnap.com/support" },
+        { brand: "Qognify / Ocularis", user: "admin", pass: "1234", ip: "DHCP", notes: "Enterprise VMS.", url: "https://www.qognify.com/support/" },
+        { brand: "Reolink", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Default password is usually blank until set by the user.", url: "https://support.reolink.com/" },
+        { brand: "Ring (Cloud App)", user: "N/A (App Based)", pass: "N/A", ip: "Cloud App", notes: "Open Ring App > History > Event > Share > Download arrow.", url: "https://support.ring.com/" },
+        { brand: "Salient", user: "admin", pass: "admin", ip: "DHCP", notes: "CompleteView VMS.", url: "https://www.salientsys.com/support" },
+        { brand: "Sannce", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Uses similar firmware to Annke/Hikvision. Often uses port 8000.", url: "https://support.sannce.com/" },
+        { brand: "SimpliSafe", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open SimpliSafe app > Cameras > Select Camera > Timeline > Download icon.", url: "https://support.simplisafe.com/" },
+        { brand: "Sony", user: "admin", pass: "admin", ip: "192.168.0.100", notes: "Port 80.", url: "https://pro.sony/en_GB/support-resources" },
+        { brand: "Speco Technologies", user: "admin", pass: "1234", ip: "192.168.1.100", notes: "Also try admin/admin.", url: "https://specotech.com/support/" },
+        { brand: "Swann", user: "admin", pass: "12345 / (blank)", ip: "DHCP", notes: "Often 12345 or leaving the password blank entirely.", url: "https://support.swann.com/" },
+        { brand: "Synology", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Surveillance Station app on DSM.", url: "https://www.synology.com/support" },
+        { brand: "Tapo (TP-Link)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Tapo app > Playback & Memory > Select clip > Download to app memory > Export.", url: "https://www.tp-link.com/support/" },
+        { brand: "Tiandy", user: "Admin", pass: "1111", ip: "192.168.1.2", notes: "Note case sensitivity.", url: "https://en.tiandy.com/support/" },
+        { brand: "TP-Link / VIGI", user: "admin", pass: "admin", ip: "192.168.0.60", notes: "Often requires VIGI app.", url: "https://www.tp-link.com/support/" },
+        { brand: "TVT", user: "admin", pass: "123456", ip: "192.168.226.201", notes: "Common OEM for many budget brands.", url: "https://en.tvt.net.cn/support.html" },
+        { brand: "Ubiquiti / UniFi Protect", user: "ubnt", pass: "ubnt", ip: "DHCP", notes: "Managed via UniFi OS. Passwords are tied to SSO accounts.", url: "https://help.ui.com/" },
+        { brand: "Uniview (UNV)", user: "admin", pass: "123456", ip: "192.168.1.13", notes: "Default is 123456. EZTools is the IP search utility.", url: "https://global.uniview.com/Support/" },
+        { brand: "Verint", user: "admin", pass: "admin", ip: "192.168.1.2", notes: "Nextiva VMS.", url: "https://www.verint.com/support/" },
+        { brand: "Vicon", user: "admin", pass: "1234", ip: "10.x.x.x", notes: "ViconNet VMS.", url: "https://vicon-security.com/support/" },
+        { brand: "Vista", user: "Admin", pass: "1234", ip: "DHCP", notes: "Qulu VMS or Viper DVRs.", url: "https://vista-cctv.com/support/" },
+        { brand: "Vitek", user: "admin", pass: "1234", ip: "192.168.1.100", notes: "VT- series NVRs/DVRs.", url: "https://vitekcctv.com/support/" },
+        { brand: "Vivotek", user: "root", pass: "root", ip: "192.168.0.90 / DHCP", notes: "Default is root/root. Shepherd utility used for finding them.", url: "https://www.vivotek.com/support" },
+        { brand: "Wansview", user: "admin", pass: "123456", ip: "DHCP", notes: "Often controlled via Wansview Cloud app.", url: "https://wansview.com/support/" },
+        { brand: "Wavestore", user: "admin", pass: "admin", ip: "192.168.1.200", notes: "Enterprise VMS, heavily Linux based.", url: "https://www.wavestore.com/support" },
+        { brand: "W Box", user: "admin", pass: "wbox123", ip: "192.168.1.108", notes: "Often rebranded Dahua or Hikvision.", url: "https://www.wboxtech.com/" },
+        { brand: "Wyze (Cloud App)", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Wyze app > Select Camera > View Playback/Events > Download/Save icon.", url: "https://support.wyze.com/" },
+        { brand: "Yi / Kami", user: "N/A", pass: "N/A", ip: "Cloud App", notes: "Open Yi Home app > SD Card/Cloud > Select clip > Record/Download icon.", url: "https://kamihome.com/support/" },
+        { brand: "Zmodo", user: "admin", pass: "111111 / (blank)", ip: "DHCP", notes: "111111 is very common for standard Zmodo NVRs.", url: "https://www.zmodo.com/support" },
+        { brand: "Zosi", user: "admin", pass: "(blank)", ip: "DHCP", notes: "Requires monitor/mouse directly attached to DVR for easy reset.", url: "https://www.zositech.com/support/" }
+    ];
+
+    function renderGuides(filterText = "") {
+        const container = document.getElementById('guidesContainer');
+        container.innerHTML = "";
+        const lowerFilter = filterText.toLowerCase();
+        
+        cctvGuides.forEach(guide => {
+            if (guide.brand.toLowerCase().includes(lowerFilter) || guide.notes.toLowerCase().includes(lowerFilter)) {
+                
+                const safeBrand = guide.brand.replace(" (Cloud App)", "").replace(" / ", " ");
+                const ytSearchUrl = 'https://www.youtube.com/results?search_query=how+to+export+footage+' + encodeURIComponent(safeBrand) + '+cctv';
+
+                const card = document.createElement('div');
+                card.className = 'guide-card';
+                card.innerHTML = `
+                    <div>
+                        <h4>${guide.brand}</h4>
+                        <p><strong>User:</strong> ${guide.user}</p>
+                        <p><strong>Pass:</strong> ${guide.pass}</p>
+                        <p><strong>IP:</strong> ${guide.ip}</p>
+                        <p style="margin-top: 10px; font-size: 0.85em; color: var(--text-color); border-top: 1px dashed var(--border-color); padding-top: 5px;">${guide.notes}</p>
+                    </div>
+                    <div class="btn-group">
+                        <a href="${guide.url}" target="_blank" class="manual-btn">📖 Manual</a>
+                        <a href="${ytSearchUrl}" target="_blank" class="yt-btn">▶️ YouTube</a>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        });
+
+        if(container.innerHTML === "") {
+            container.innerHTML = "<p style='grid-column: 1/-1; text-align: center; color: #777;'>No matching systems found.</p>";
+        }
+    }
+
+    function filterGuides() { renderGuides(document.getElementById('guideSearch').value); }
+    window.onload = initForm;
+</script>
+
+</body>
+</html>
